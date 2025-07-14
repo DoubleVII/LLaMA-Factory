@@ -1396,11 +1396,66 @@ class Qwen2AudioPlugin(BasePlugin):
         return self._get_mm_inputs(images, videos, audios, processor)
 
 
+
+
+import math
+
+def round_by_factor(number: int, factor: int) -> int:
+    """Returns the closest integer to 'number' that is divisible by 'factor'."""
+    return round(number / factor) * factor
+
+
+def ceil_by_factor(number: int, factor: int) -> int:
+    """Returns the smallest integer greater than or equal to 'number' that is divisible by 'factor'."""
+    return math.ceil(number / factor) * factor
+
+
+def floor_by_factor(number: int, factor: int) -> int:
+    """Returns the largest integer less than or equal to 'number' that is divisible by 'factor'."""
+    return math.floor(number / factor) * factor
+
+
+def smart_resize(
+    height: int, width: int, factor: int, min_pixels: int, max_pixels: int
+) -> tuple[int, int]:
+    """
+    Rescales the image so that the following conditions are met:
+
+    1. Both dimensions (height and width) are divisible by 'factor'.
+
+    2. The total number of pixels is within the range ['min_pixels', 'max_pixels'].
+
+    3. The aspect ratio of the image is maintained as closely as possible.
+    """
+    h_bar = max(factor, round_by_factor(height, factor))
+    w_bar = max(factor, round_by_factor(width, factor))
+    if h_bar * w_bar > max_pixels:
+        beta = math.sqrt((height * width) / max_pixels)
+        h_bar = max(factor, floor_by_factor(height / beta, factor))
+        w_bar = max(factor, floor_by_factor(width / beta, factor))
+    elif h_bar * w_bar < min_pixels:
+        beta = math.sqrt(min_pixels / (height * width))
+        h_bar = ceil_by_factor(height * beta, factor)
+        w_bar = ceil_by_factor(width * beta, factor)
+    return h_bar, w_bar
+
+
 @dataclass
 class Qwen2VLPlugin(BasePlugin):
     @override
     def _preprocess_image(self, image: "ImageObject", **kwargs) -> "ImageObject":
-        image = super()._preprocess_image(image, **kwargs)
+
+        image_factor = kwargs.get("image_factor", 28)
+        image_min_pixels = kwargs.get("image_min_pixels", 128 * 28 * 28)
+        image_max_pixels = kwargs.get("image_max_pixels", 768 * 28 * 28)
+        height, width = smart_resize(image.height, image.width, factor = image_factor, min_pixels = image_min_pixels, max_pixels = image_max_pixels)
+        if (height, width) != (image.height, image.width):
+            image = image.resize((width, height))
+
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+
         if min(image.width, image.height) < 28:
             width, height = max(image.width, 28), max(image.height, 28)
             image = image.resize((width, height))

@@ -79,7 +79,10 @@ class CustomKTOTrainer(KTOTrainer):
         self.ftx_gamma = finetuning_args.pref_ftx
 
         Trainer.__init__(self, model=model, **kwargs)
-        self.model_accepts_loss_kwargs = False  # overwrite trainer's default behavior
+        if finetuning_args.model_accepts_loss_kwargs is not None:
+            self.model_accepts_loss_kwargs = finetuning_args.model_accepts_loss_kwargs
+        else:
+            self.model_accepts_loss_kwargs = False  # overwrite trainer's default behavior
         if not hasattr(self, "accelerator"):
             raise AttributeError("Please update `transformers`.")
 

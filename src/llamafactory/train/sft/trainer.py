@@ -59,7 +59,9 @@ class CustomSeq2SeqTrainer(Seq2SeqTrainer):
             self.processing_class: PreTrainedTokenizer = kwargs.get("tokenizer")
 
         super().__init__(**kwargs)
-        if processor is not None:
+        if finetuning_args.model_accepts_loss_kwargs is not None:
+            self.model_accepts_loss_kwargs = finetuning_args.model_accepts_loss_kwargs
+        elif processor is not None:
             # avoid wrong loss under gradient accumulation
             # https://github.com/huggingface/transformers/pull/36044#issuecomment-2746657112
             self.model_accepts_loss_kwargs = False

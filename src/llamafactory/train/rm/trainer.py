@@ -50,7 +50,10 @@ class PairwiseTrainer(Trainer):
             kwargs["processing_class"] = kwargs.pop("tokenizer")
 
         super().__init__(**kwargs)
-        self.model_accepts_loss_kwargs = False  # overwrite trainer's default behavior
+        if finetuning_args.model_accepts_loss_kwargs is not None:
+            self.model_accepts_loss_kwargs = finetuning_args.model_accepts_loss_kwargs
+        else:
+            self.model_accepts_loss_kwargs = False  # overwrite trainer's default behavior
         self.finetuning_args = finetuning_args
         self.can_return_loss = True  # override property to return eval_loss
         self.add_callback(FixValueHeadModelCallback)

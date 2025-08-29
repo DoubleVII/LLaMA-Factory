@@ -456,6 +456,10 @@ class FinetuningArguments(
         default=False,
         metadata={"help": "Whether or not to compute effective tokens per second."},
     )
+    model_accepts_loss_kwargs: bool = field(
+        default=None,
+        metadata={"help": "Whether or not the model accepts loss kwargs."},
+    )
 
     def __post_init__(self):
         def split_arg(arg):
